@@ -1,0 +1,16 @@
+aiofiles
+fastapi
+opencv-python
+pillow
+qdrant-client
+wrapt
+transformers
+sentence_transformers
+scikit-learn
+requests
+uvicorn
+python-multipart
+loguru
+streamlit
+openai
+google-generativeai

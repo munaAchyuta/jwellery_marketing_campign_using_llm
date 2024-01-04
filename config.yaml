@@ -1,0 +1,27 @@
+# APP config
+app_name: "jwellery-shopping-buddy"
+log_path: "./log/file_{time}.log"
+
+# OPENAI API config
+openai_url: "https://api.openai.com/v1/chat/completions"
+openai_token: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+openai_model: "gpt-3.5-turbo"
+openai_max_token: 400
+openai_temperature: 0.7
+
+# GEMINI API config
+gemini_token: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+gemini_model: "gemini-pro"
+
+# Embedding model config
+embedding_model: "all-MiniLM-L6-v2"
+embedding_max_seq_length: 256
+embedding_size: 384
+
+# User Document Save config
+doc_save_path: "./user_data"
+
+# Document Retriever config
+doc_retrieval_config:
+  document_path: "./sample_data/pdf_docs/*.pdf"
+  vector_db_path: "./vector_db"
