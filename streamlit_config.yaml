@@ -1,0 +1,4 @@
+api_endpoint_chat_conversation: "http://127.0.0.1:8002/get_answer_given_question/"
+api_endpoint_content_recommend: "http://127.0.0.1:8002/get_content_based_recommendation/"
+api_complementary_products: "http://127.0.0.1:8002/get_complementary_products/"
+api_recommendations_based_preference: "http://127.0.0.1:8002/get_recommendations_based_preference/"

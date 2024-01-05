@@ -1,5 +1,5 @@
 # APP config
-app_name: "jwellery-shopping-buddy"
+app_name: "Jwellery Shopping Assistant for Cross/Up Selling of Product"
 log_path: "./log/file_{time}.log"
 
 # OPENAI API config

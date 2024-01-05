@@ -32,40 +32,33 @@ from src.db import schemas, crud
 from src.db import default_record_create
 
 #default_record_create.create_default_recommend_product()
-
 db_dependency = Annotated[Session, Depends(get_db)]
-
 baseclass_obj = BaseClass()
-
 app = FastAPI()
 
 
 class Item(BaseModel):
     text: str
 
+class CompItem(BaseModel):
+    product_category: List[str]
+
 class UserItem(BaseModel):
     mail: str
 
+
+# Load the product data
+products_df = pd.read_csv("sample_data/tanishq_product_structured_data.csv")
+products_df.fillna('No Information', inplace=True)
+
 # Load Complementary product data
-complementary_products_df = pd.DataFrame([{'name':'Layered Beaded Necklace','product_category':'chain','description':'Layered Beaded Necklace','price':13000.0,'image_url':'sample_complementary_data\\layer_necklace.PNG'},
-                {'name':'Gleaming Gold Necklace','product_category':'chain','description':'Gleaming Gold Necklace','price':49000.0,'image_url':'sample_complementary_data\\Gleaming Gold Necklace.PNG'},
-                {'name':'Elegant Gold Finger Ring','product_category':'ring','description':'Elegant Gold Finger Ring','price':27000.0,'image_url':'sample_complementary_data\\Elegant Gold Finger Ring.PNG'},
-                {'name':'Mesmerising Twisted Gold Ring','product_category':'ring','description':'Mesmerising Twisted Gold Ring','price':43000.0,'image_url':'sample_complementary_data\\Mesmerising Twisted Gold Ring.PNG'}])
+complementary_products_df = pd.read_csv('sample_data_csv/complementary_products.csv')
 
 # Load user transaction data
-user_transaction_df = pd.DataFrame([{'name':'neha@gmail.com','gender':'Women','product_category':'chain','metal':'gold','description':'Layered Beaded Necklace','price':13000.0,'image_url':'sample_complementary_data\\layer_necklace.PNG'},
-                {'name':'neha@gmail.com','gender':'Women','product_category':'chain','metal':'gold','description':'Gleaming Gold Necklace','price':49000.0,'image_url':'sample_complementary_data\\Gleaming Gold Necklace.PNG'},
-                {'name':'neha@gmail.com','gender':'Women','product_category':'ring','metal':'diamond','description':'Elegant Gold Finger Ring','price':27000.0,'image_url':'sample_complementary_data\\Elegant Gold Finger Ring.PNG'},
-                {'name':'ramesh@gmail.com','gender':'Men','product_category':'ring','metal':'gold','description':'Mesmerising Twisted Gold Ring','price':43000.0,'image_url':'sample_complementary_data\\Mesmerising Twisted Gold Ring.PNG'},
-                {'name':'ramesh@gmail.com','gender':'Men','product_category':'Kada','metal':'gold','description':'Mesmerising Twisted Gold Ring','price':43000.0,'image_url':'sample_complementary_data\\Mesmerising Twisted Gold Ring.PNG'},
-                {'name':'ramesh@gmail.com','gender':'Men','product_category':'chain','metal':'gold','description':'Mesmerising Twisted Gold Ring','price':43000.0,'image_url':'sample_complementary_data\\Mesmerising Twisted Gold Ring.PNG'},
-                {'name':'ramesh@gmail.com','gender':'Men','product_category':'ring','metal':'gold','description':'Mesmerising Twisted Gold Ring','price':43000.0,'image_url':'sample_complementary_data\\Mesmerising Twisted Gold Ring.PNG'}])
+user_transaction_df = pd.read_csv('sample_data_csv/user_transaction.csv')
 
 # Load Complementary product data
-new_products_df = pd.DataFrame([{'product_id':1,'name':'Layered Beaded Necklace','product_category':'chain','description':'Layered Beaded Necklace','price':13000.0,'image_url':'sample_complementary_data\\layer_necklace.PNG'},
-                {'product_id':2,'name':'Gleaming Gold Necklace','product_category':'chain','description':'Gleaming Gold Necklace','price':49000.0,'image_url':'sample_complementary_data\\Gleaming Gold Necklace.PNG'},
-                {'product_id':3,'name':'Elegant Gold Finger Ring','product_category':'ring','description':'Elegant Gold Finger Ring','price':27000.0,'image_url':'sample_complementary_data\\Elegant Gold Finger Ring.PNG'},
-                {'product_id':4,'name':'Mesmerising Twisted Gold Ring','product_category':'ring','description':'Mesmerising Twisted Gold Ring','price':43000.0,'image_url':'sample_complementary_data\\Mesmerising Twisted Gold Ring.PNG'}])
+new_products_df = pd.read_csv('sample_data_csv/new_products.csv')
 
 
 @app.get("/")
@@ -97,6 +90,17 @@ async def get_answer_given_question(item:Item):
     return json.loads(response)
 
 
+@app.post("/get_complementary_products/")
+async def get_complementary_products(item:CompItem):
+    '''
+    get_complementary_products
+    '''
+    comp_filter = complementary_products_df[complementary_products_df['product_category'].isin(item.product_category)]
+    comp_filter_records = comp_filter.to_dict('records')
+
+    return comp_filter_records
+
+
 @app.post("/get_content_based_recommendation/")
 async def get_content_based_recommendation(item:UserItem):
     '''
@@ -106,6 +110,45 @@ async def get_content_based_recommendation(item:UserItem):
     user_filter_list = user_filter_df.to_dict('records')
     new_products_list = new_products_df.to_dict('records')
     transaction_based_prompt_new = transaction_based_prompt.format(transaction_records=user_filter_list, new_products_records=new_products_list)
-    response = call_gemini_api(transaction_based_prompt_new)
+    response = await call_gemini_api(transaction_based_prompt_new)
+    product_ids = json.loads(response)
 
-    return json.loads(response)
+    # filter dataframe
+    prod_tobe_recmd_df = new_products_df[new_products_df['product_id'].isin(product_ids)]
+    prod_tobe_recmd = prod_tobe_recmd_df.to_dict('records')
+
+    return prod_tobe_recmd
+
+
+@app.post("/get_recommendations_based_preference/")
+async def get_recommendations_based_preference(item: Dict):
+    '''# Define a function to generate product recommendations'''
+    tmp = {'gender':'Gender','product_category':'file_name'}
+    new_df_list = []
+    target_strings = dict()
+    for key in tmp:
+        if item.get(key,None):
+            target_strings[tmp.get(key)] = item.get(key)
+
+    if len(target_strings) != 0:
+        # Check if all specified columns contain the target strings
+        mask = products_df.apply(lambda row: all(row[col].lower().find(target.lower()) != -1 for col, target in target_strings.items()), axis=1)
+        final_df = products_df[mask]
+
+        if target_strings.get('Gender',None):
+            mask = final_df['Gender'].str.lower() == target_strings.get('Gender').lower()
+            final_df = final_df[mask]
+        
+        if len(final_df) == 0:
+            mask = products_df.apply(lambda row: all(row[col].lower().find(target.lower()) != -1 for col, target in target_strings.items()), axis=1)
+            final_df = products_df[mask]
+    else:
+        final_df = pd.DataFrame()
+    
+    if len(final_df) == 0:
+        new_df_list.append(products_df)
+        final_df = pd.concat(new_df_list, ignore_index=True)
+        final_df.drop_duplicates(inplace=True)
+
+    # Return the top 10 products
+    return final_df.head(10).to_dict('records')

@@ -1,4 +1,4 @@
-# Jwellery Shopping Buddy
+# Jwellery Shopping Assistant for Cross/Up Selling of Product
 * Description
     - this is meant to help both Business(seller) and customers. where a seller encourages customers to purchase additional products or services related to their initial purchase.The idea is to offer complementary or supplementary items that enhance the value of the original purchase. Cross-selling is often used to increase the average transaction value and maximize revenue from each customer.
 * Scope
@@ -34,6 +34,11 @@
     - run `uvicorn main:app --port 8002`
 * Setup Streamlit Service
     - run `streamlit run app.py`
+
+## Sample UI result
+![Preference-based cross-selling](applications/result-1.png)
+![Content-based cross-selling](applications/result-2.png)
+![Complementary cross-selling](applications/result-3.png)
 
 ## LICENSE
 * General Public Usage :)
